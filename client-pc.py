@@ -33,10 +33,12 @@ while 1:
         MESSAGE = command       # Motor voltage setting
     elif (command == "exit"):
         MESSAGE = "exit"
+    elif (command == "kill"):
+        MESSAGE = "kill"
     else:
         MESSAGE = "w"
     s.send(MESSAGE)
-    if (MESSAGE == "exit"):
+    if (MESSAGE == "exit" or MESSAGE == "kill"):
         break
     data = s.recv(BUFFER_SIZE)
     print "received data:", data
