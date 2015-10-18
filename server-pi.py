@@ -29,6 +29,20 @@ s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 s.bind((TCP_IP, TCP_PORT))
 auto = False
 
+def autonomousMode():
+   global auto          # needed to globally change the value of Auto
+   while auto:
+	   data = conn.recv(BUFFER_SIZE)
+      if (string.find(data, "auto") != -1):
+         GPIO.output(led, 0)
+         auto = False
+         break
+      else:
+         # Do line following code <<---  Final Place for code!!!!!!!!!!!!!!!!!!
+         pass
+	
+    
+
 while 1:
     s.listen(1)
         
@@ -41,9 +55,9 @@ while 1:
             if not auto:
                 GPIO.output(led, 1)
                 auto = True
+                autonmousMode()
             else:
-                GPIO.output(led, 0)
-                auto = False
+                pass
         if (string.find(data, "L") != -1):
             # left motor forward
             if (pi.get_PWM_dutycycle(pinLeftMotor) != 127):
