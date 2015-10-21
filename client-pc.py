@@ -8,7 +8,8 @@ TCP_PORT = 5018
 BUFFER_SIZE = 1024
 MESSAGE = "w"
 keyDown = 0
-arduino = serial.Serial('COM1',115200,timeout = .1)
+lastData = ""
+arduino = serial.Serial('COM14',115200,timeout = .1)
 
 s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 s.connect((TCP_IP, TCP_PORT))
@@ -62,9 +63,10 @@ while 1:
 						s.send("u")
 					else:
 						#read serial stuff
+						lastData = data
 						data = arduino.readline()
 						#send data: format(007127127127\n)
-						if data == "\n":
+						if (data == "\n") or (data == lastData):
 							continue
 						else:
 							s.send(data)
