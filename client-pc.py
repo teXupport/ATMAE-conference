@@ -1,4 +1,4 @@
-import pygame, sys, math, random, socket
+import pygame, sys, math, random, time, socket, serial
 from pygame.locals import *
 
 pygame.init()
@@ -7,6 +7,8 @@ TCP_IP = '127.0.0.1'
 TCP_PORT = 5018
 BUFFER_SIZE = 1024
 MESSAGE = "w"
+keyDown = 0
+arduino = serial.Serial('COM1',115200,timeout = .1)
 
 s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 s.connect((TCP_IP, TCP_PORT))
@@ -14,14 +16,30 @@ while 1:
     MESSAGE = "w"
     for event in pygame.event.get():
         
-        if (((event.type == KEYDOWN) or event.type == KEYUP) and event.key == K_w):        ## Forward
+        if (((event.type == KEYDOWN) or event.type == KEYUP) and event.key == K_w and not keydown):        ## Forward
             MESSAGE = "LR"
-        elif (((event.type == KEYDOWN) or event.type == KEYUP) and event.key == K_s):   ## Back
+			if (not keyDown):
+				keyDown = 1
+			else:
+				keyDown = 0
+        elif (((event.type == KEYDOWN) or event.type == KEYUP) and event.key == K_s and not keydown):   ## Back
             MESSAGE = "lr"
-        elif (((event.type == KEYDOWN) or event.type == KEYUP) and event.key == K_a):    ## Left
+			if (not keyDown):
+				keyDown = 1
+			else:
+				keyDown = 0
+        elif (((event.type == KEYDOWN) or event.type == KEYUP) and event.key == K_a and not keydown):    ## Left
             MESSAGE = "lR"
-        elif (((event.type == KEYDOWN) or event.type == KEYUP) and event.key == K_d):   ## Right
+			if (not keyDown):
+				keyDown = 1
+			else:
+				keyDown = 0
+        elif (((event.type == KEYDOWN) or event.type == KEYUP) and event.key == K_d and not keydown):   ## Right
             MESSAGE = "Lr"
+			if (not keyDown):
+				keyDown = 1
+			else:
+				keyDown = 0
         elif (event.type == KEYUP and event.key == K_t):   ## Autonomous Mode
             MESSAGE = "auto"
         elif (event.type == KEYUP and event.key == K_g):  ## Conveyor
@@ -34,28 +52,22 @@ while 1:
             MESSAGE = "h"
         elif (event.type == KEYUP and event.key == K_n):    ## Dump and Reset Dustpan
             MESSAGE = "n"
-        # Motor voltage setting
-        elif (event.type == KEYUP):
-            if (event.key == K_0):
-                MESSAGE = "0"
-            elif (event.key == K_1):
-                MESSAGE = "1"
-            elif (event.key == K_2):
-                MESSAGE = "2"
-            elif (event.key == K_3):
-                MESSAGE = "3"
-            elif (event.key == K_4):
-                MESSAGE = "4"
-            elif (event.key == K_5):
-                MESSAGE = "5"
-            elif (event.key == K_6):
-                MESSAGE = "6"
-            elif (event.key == K_7):
-                MESSAGE = "7"
-            elif (event.key == K_8):
-                MESSAGE = "8"
-            elif (event.key == K_9):
-                MESSAGE = "9"
+		elif (event.type == KEYUP and event.key == K_u):    ## Dump and Reset Dustpan
+            flag = True
+			s.send("u")
+			while flag:
+				for event in pygame.event.get():
+					if (event.type == KEYUP and event.key == K_u):
+						flag = False
+						s.send("u")
+					else:
+						#read serial stuff
+						data = arduino.readline()
+						#send data: format(007127127127\n)
+						if data == "\n":
+							continue
+						else:
+							s.send(data)
         elif (event.type == pygame.QUIT):
             MESSAGE = "kill"
         else:
