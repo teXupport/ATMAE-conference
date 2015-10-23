@@ -3,56 +3,51 @@
 import socket, string, time, signal, sys
 from Adafruit_PWM_Servo_Driver import PWM
 from Adafruit_ADS1x15 import ADS1x15
-##import RPi.GPIO as GPIO
+import RPi.GPIO as GPIO
 
-##GPIO.setmode(GPIO.BCM)
+GPIO.setmode(GPIO.BCM)
 
-##led = 4
+led = 4
 
 chanBrush = 4
 chanConveyor = 5
 chanLeftMotor = 0
-chanRightMotor = 1
-chanSwingArm = 2
-chanDustPan = 3
+chanRightMotor = 11
+chanSwingArm = 6
+chanDustPan = 7
 
-chanArmBase = 6
-chanArmShoulder = 7
-chanArmElbow = 8
-chanArmClaw = 9
+chanArmBase = 12
+chanArmShoulder = 13
+chanArmElbow = 14
+chanArmClaw = 15
 
-lm = 0
-rm = 0
-br = 0
-cv = 0
-
-TCP_IP = ''  # this is the server, so localhost
-TCP_PORT = 5016  # port is the same on server and client
+TCP_IP = '127.0.0.1'  # this is the server, so localhost
+TCP_PORT = 5010  # port is the same on server and client
 BUFFER_SIZE = 1024  # Normally 1024
    
 s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 s.bind((TCP_IP, TCP_PORT))
 auto = False  # initialize auto to False, meaning robot is not in autonomous mode
-armModeb = False    # initialize armMode to False, meaning robot is not in arm mode
+armMode = False	# initialize armMode to False, meaning robot is not in arm mode
 
 def signal_handler(signal, frame):
         print 'You pressed Ctrl+C!'
-        
-        # STOP all motors/servos
+		
+		# STOP all motors/servos
         pwm.setPWM(chanBrush, 0, 0)
         pwm.setPWM(chanConveyor, 0, 0)
         pwm.setPWM(chanLeftMotor, 0, 0)
         pwm.setPWM(chanRightMotor, 0, 0)
         pwm.setPWM(chanSwingArm, 0, 0)
         pwm.setPWM(chanDustPan, 0, 0)
-        
+		
         conn.close()  # close the connection
         sys.exit(0)  # exit gracefully
 signal.signal(signal.SIGINT, signal_handler)
 print 'Server(server.py) started'
 print 'Press Ctrl+C to exit'
 
-ADS1115 = 0x01  # 16-bit ADC
+ADS1115 = 0x01	# 16-bit ADC
 
 # Select the gain
 gain = 6144  # +/- 6.144V
@@ -93,66 +88,67 @@ def setServoPulse(channel, pulse):
   pwm.setPWM(channel, 0, pulse)
 
 def armMode():
-    global armModeb
-    s.setblocking(0)  # prevent s.recv from blocking the code
-    while armModeb:
-        data = conn.recv(BUFFER_SIZE)
-        if (string.find(data, "u") != -1):
-                armModeb = False
-                s.setblocking(1)  # allow s.recv to block again
-                break
-        elif (len(data) == 13):
-                print data
-                servo1 = int(float(data[0:3]))
-                servo2 = int(float(data[3:6]))
-                servo3 = int(float(data[6:9]))
-                servo4 = int(float(data[9:12]))
-                #print('%f, %f, %f, %f' % (servo1, servo2, servo3, servo4))
-                        
-                pwm.setPWM(chanArmBase, 0, (servo1*450/255+150))
-                pwm.setPWM(chanArmShoulder, 0, (servo2*450/255+150))
-                pwm.setPWM(chanArmElbow, 0, (servo3*450/255+150))
-                pwm.setPWM(chanArmClaw, 0, (servo4*450/255+150))
-                
+	global armMode
+	s.setblocking(0)  # prevent s.recv from blocking the code
+	while armMode:
+		data = conn.recv(BUFFER_SIZE)
+		if (string.find(data, "u") != -1):
+			armMode = False
+			s.setblocking(1)  # allow s.recv to block again
+			pwm.setPWM(chanArmBase, 0, 127)
+			pwm.setPWM(chanArmShoulder, 0, 127)
+			pwm.setPWM(chanArmElbow, 0, 127)
+			pwm.setPWM(chanArmClaw, 0, 127)
+			break
+		else:
+			servo1 = data[0:3]
+			servo2 = data[3:6]
+			servo3 = data[6:9]
+			servo4 = data[9:12]
+			
+			pwm.setPWM(chanArmBase, 0, servo1)
+			pwm.setPWM(chanArmShoulder, 0, servo2)
+			pwm.setPWM(chanArmElbow, 0, servo3)
+			pwm.setPWM(chanArmClaw, 0, servo4)
 def autonomousMode():
     global auto          # needed to globally change the value of auto
     s.setblocking(0)  # prevent s.recv from blocking the code
     pwm.setPWM(chanBrush, 0, servoMax)  # turn on brush
     while auto:
-        data = conn.recv(BUFFER_SIZE)
-        if (string.find(data, "auto") != -1):
-                ##GPIO.output(led, 0)  # turn off autonomous mode indicator LED
-                auto = False  # set auto to False, no longer autonomous
-                pwm.setPWM(chanLeftMotor, 0, 0)  #STOP left motor
-                pwm.setPWM(chanRightMotor, 0, 0)  #STOP right motor
-                s.setblocking(1)  # allow s.recv to block again
-                pwm.setPWM(chanBrush, 0, 0)  # turn off brush
-                break
-        else:
- # Do line following code <<---  Final Place for code!!!!!!!!!!!!!!!!!!
-                voltsFL = adc.readADCSingleEnded(0, gain, sps) / 1000  # far left sensor
-                voltsNL = adc.readADCSingleEnded(1, gain, sps) / 1000  # near left sensor
-                voltsLM = adc.readADCSingleEnded(4, gain, sps) / 1000  # left middle sensor
-                voltsRM = adc.readADCSingleEnded(5, gain, sps) / 1000  # right middle sensor
-                voltsNR = adc.readADCSingleEnded(2, gain, sps) / 1000  # near right sensor
-                voltsFR = adc.readADCSingleEnded(3, gain, sps) / 1000  # far right sensor
+	    data = conn.recv(BUFFER_SIZE)
+		if (string.find(data, "auto") != -1):
+			GPIO.output(led, 0)  # turn off autonomous mode indicator LED
+			auto = False  # set auto to False, no longer autonomous
+			pwm.setPWM(chanLeftMotor, 0, 0)  #STOP left motor
+			pwm.setPWM(chanRightMotor, 0, 0)  #STOP right motor
+			s.setblocking(1)  # allow s.recv to block again
+			pwm.setPWM(chanBrush, 0, 0)  # turn off brush
+			break
+		else:
+         # Do line following code <<---  Final Place for code!!!!!!!!!!!!!!!!!!
+			voltsFL = adc.readADCSingleEnded(0, gain, sps) / 1000  # far left sensor
+			voltsNL = adc.readADCSingleEnded(1, gain, sps) / 1000  # near left sensor
+			voltsLM = adc.readADCSingleEnded(4, gain, sps) / 1000  # left middle sensor
+			voltsRM = adc.readADCSingleEnded(5, gain, sps) / 1000  # right middle sensor
+			voltsNR = adc.readADCSingleEnded(2, gain, sps) / 1000  # near right sensor
+			voltsFR = adc.readADCSingleEnded(3, gain, sps) / 1000  # far right sensor
 
-                if (((voltsFL/(gain/1000)) < .5) and ((voltsNL/(gain/1000)) < .5)):
-                        pwm.setPWM(chanLeftMotor, 0, (servoMax-100))
-                else:
-                        pwm.setPWM(chanLeftMotor, 0, 0)
-                                        
-                if (((voltsLM/(gain/1000)) > .5) and ((voltsRM/(gain/1000)) > .5)):
-                    pwm.setPWM(chanRightMotor, 0, (servoMax-100))
-                    pwm.setPWM(chanLeftMotor, 0, (servoMax-100))
-                else:
-                    pwm.setPWM(chanRightMotor, 0, 0)
-                    pwm.setPWM(chanLeftMotor, 0, 0)
-                                        
-                if (((voltsNR/(gain/1000)) < .5) and ((voltsFR/(gain/1000)) < .5)):
-                        pwm.setPWM(chanRightMotor, 0, (servoMax-100))
-                else:
-                        pwm.setPWM(chanRightMotor, 0, 0)
+			if (((voltsFL/(gain/1000)) < .5) and ((voltsNL/(gain/1000)) < .5)):
+				pwm.setPWM(chanLeftMotor, 0, (servoMax-100))
+			else:
+				pwm.setPWM(chanLeftMotor, 0, 0)
+					
+	        if (((voltsLM/(gain/1000)) > .5) and ((voltsRM/(gain/1000)) > .5)):
+	            pwm.setPWM(chanRightMotor, 0, (servoMax-100))
+				pwm.setPWM(chanLeftMotor, 0, (servoMax-100))
+	        else:
+	            pwm.setPWM(chanRightMotor, 0, 0)
+				pwm.setPWM(chanLeftMotor, 0, 0)
+					
+			if (((voltsNR/(gain/1000)) < .5) and ((voltsFR/(gain/1000)) < .5)):
+				pwm.setPWM(chanRightMotor, 0, (servoMax-100))
+			else:
+				pwm.setPWM(chanRightMotor, 0, 0)
     
 
 while 1:
@@ -162,7 +158,7 @@ while 1:
     print 'Connection address:', addr
     while 1:
         data = conn.recv(BUFFER_SIZE)
-        if (string.find(data, "t") != -1):
+        if (string.find(data, "auto") != -1):
             # toggle autonomous
             if not auto:
                 GPIO.output(led, 1)
@@ -231,16 +227,16 @@ while 1:
             pwm.setPWM(pinDustPan, 0, 500)
             time.sleep(2)
             pwm.setPWM(pinDustPan, 0, 2500)
-        if (string.find(data, "u") != -1):
-                armModeb = True
-                armMode()
-        if (data == "k"):
+		if (string.find(data, "u") != -1):
+			armMode = True
+			armMode()
+        if (data == "exit" or data == "kill"):
             break
         print "received data:", data
         conn.send(data)  # echo
     print "Client disconnected"
     conn.close()
-    if (data == "k"):
+    if (data == "kill"):
         break
 
 #  STOP all motors/servos
@@ -250,5 +246,5 @@ pwm.setPWM(chanLeftMotor, 0, 0)
 pwm.setPWM(chanRightMotor, 0, 0)
 pwm.setPWM(chanSwingArm, 0, 0)
 pwm.setPWM(chanDustPan, 0, 0)
-        
+		
 print "kill command received. Goodbye."
