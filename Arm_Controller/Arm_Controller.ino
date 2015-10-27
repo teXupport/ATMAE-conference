@@ -29,10 +29,10 @@ void setup() {
 }
 
 void loop() {
-  baseIn = (analogRead(basePin) / 4); // reading of ~[0-1024] divided by 1024, times 256 --> range * (256/1024) --> range / 4, range is now ~[0-255]
-  shoulderIn = (analogRead(shoulderPin) / 4);
-  elbowIn = (analogRead(elbowPin) / 4);
-  clawIn = (analogRead(clawPin) / 4);
+  baseIn = map(analogRead(basePin), 0, 1023, 0, 255); // reading of ~[0-1024] divided by 1024, times 256 --> range * (256/1024) --> range / 4, range is now ~[0-255]
+  shoulderIn = map(analogRead(shoulderPin), 0, 1023, 0, 255);
+  elbowIn = map(analogRead(elbowPin), 0, 1023, 0, 255);
+  clawIn = map(analogRead(clawPin), 0, 1023, 0, 255);
 
   for (i = 0; i < 13; i++)
     if (i != 12)
@@ -57,7 +57,7 @@ void updateData(int val, int place) {
     dataToSend[place] = temp[0];
     dataToSend[place + 1] = temp[1];
     dataToSend[place + 2] = temp[2];
-  } else if (val > 99) {
+  } else if (val > 9) {
     dataToSend[place] = '0';
     dataToSend[place + 1] = temp[0];
     dataToSend[place + 2] = temp[1];
