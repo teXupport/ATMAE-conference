@@ -222,7 +222,7 @@ while 1:
                 leftVal = 0
                 lm = 0
             else:
-                leftVal = int(round((motorMin + reverseSpeed * (motorMax-motorMin) / 2), 0))
+                leftVal = int(round(((motorMax-motorMin) / 2 - reverseSpeed * (motorMax-motorMin) / 2), 0))
                 lm = -1
         if (string.find(data, "r") != -1):
             # right motor backward
@@ -230,7 +230,7 @@ while 1:
                 rightVal = 0
                 rm = 0
             else:
-                rightVal = int(round((motorMin + reverseSpeed * (motorMax-motorMin) / 2), 0))
+                rightVal = int(round(((motorMax-motorMin) / 2 - reverseSpeed * (motorMax-motorMin) / 2), 0))
                 rm = -1
         if (string.find(data, "c") != -1):
             # toggle conveyor
