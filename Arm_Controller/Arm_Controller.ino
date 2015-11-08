@@ -24,7 +24,7 @@ void setup() {
   pinMode(shoulderPin, INPUT);
   pinMode(elbowPin, INPUT);
   pinMode(clawPin, INPUT);
-  Serial.begin(115200);
+  Serial.begin(19200);
   delay(500);
 }
 

@@ -126,10 +126,10 @@ which_hat = None  # save state
 
 max_fps = 60
 
-##TCP_IP = '192.168.1.127'
-TCP_IP = '192.168.43.250'
+TCP_IP = '192.168.1.127'
+##TCP_IP = '192.168.43.250'
 TCP_PORT = 5025
-BUFFER_SIZE = 256
+BUFFER_SIZE = 64
 MESSAGE = "w"
 driveL = ""
 driveR = ""
@@ -137,12 +137,13 @@ data = ""
 motorMin = 145
 motorMax = 650
 motorRes = motorMax - motorMin
-motorMid = (motorMax + motorMin) / 2
+motorMid = int(round(((motorMax + motorMin) / 2), 0))
 ##arduino = serial.Serial('/dev/ttyACM0', 115200, timeout = .1)  # Raspberry Pi
-##arduino = serial.Serial('COM4', 115200, timeout = .1)  # Windows computer
+arduino = serial.Serial('COM6', 19200, timeout = .1)  # Windows computer
 
 s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 s.connect((TCP_IP, TCP_PORT))
+s.setblocking(1)
 
 while 1:
     clock.tick(max_fps)
@@ -221,11 +222,15 @@ while 1:
                 MESSAGE = "u"
                 s.send(MESSAGE.encode())
                 while flag:
+                    if WINDOWS_XBOX_360:
+                        joystick.dispatch_events()
+
                     for e in pygame.event.get():
                         if (e.type == JOYBUTTONUP and e.button == 6):  ## Back button
                             flag = False
                             MESSAGE = "u"
                             s.send(MESSAGE.encode())
+                            MESSAGE = ""
 
                     if flag:
                         data = arduino.readline()
@@ -241,6 +246,9 @@ while 1:
                 s.send(MESSAGE.encode())
             elif(e.button == 8):
                 MESSAGE = "y"
+                s.send(MESSAGE.encode())
+            elif(e.button == 9):
+                MESSAGE = "o"
                 s.send(MESSAGE.encode())
         elif e.type == JOYHATMOTION:
             # pygame sends this; xinput sends a button instead--the handler converts the button to a hat event
