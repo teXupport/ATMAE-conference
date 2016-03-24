@@ -13,7 +13,8 @@ chanLeftMotor = 0
 chanRightMotor = 1
 chanLeftDoor = 2
 chanRightDoor = 3
-chanFlipper = 4
+chanLeftFlipper = 4
+chanRightFlipper = 5
 
 lm = 0
 rm = 0
@@ -21,7 +22,7 @@ ld = 0
 rd = 0
 
 TCP_IP = ''  # this is the server, so localhost
-TCP_PORT = 5025  # port is the same on server and client
+TCP_PORT = 5026  # port is the same on server and client
 BUFFER_SIZE = 32  # Normally 1024
    
 s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -32,11 +33,12 @@ def signal_handler(signal, frame):
     print 'You pressed Ctrl+C!'
 
     # STOP all motors/servos
-    pwm.setPWM(chanleftDoor, 0, 0)
+    pwm.setPWM(chanLeftDoor, 0, 0)
     pwm.setPWM(chanRightDoor, 0, 0)
     pwm.setPWM(chanLeftMotor, 0, 0)
     pwm.setPWM(chanRightMotor, 0, 0)
-    pwm.setPWM(chanFlipper, 0, 0)
+    pwm.setPWM(chanLeftFlipper, 0, 0)
+    pwm.setPWM(chanRightFlipper, 0, 0)
 
     conn.close()  # close the connection
     sys.exit(0)  # exit gracefully
@@ -72,11 +74,11 @@ adc = ADS1x15(ic=ADS1115)
 pwm = PWM(0x40)  # PWM controller is at I2C address 0x40
 pwm.setPWMFreq(60)  # Set frequency to 60 Hz
 
-servoMin = 145  # Min pulse length out of 4096
+servoMin = 150  # Min pulse length out of 4096
 servoMax = 650  # Max pulse length out of 4096
 motorMax = 650
-motorMin = 145
-reverseSpeed = 0.5 # between 0 and 1
+motorMin = 150
+reverseSpeed = 0.8 # between 0 and 1
 
 def setServoPulse(channel, pulse):
     pulseLength = 1000000  # 1,000,000 us per second
@@ -202,9 +204,22 @@ while 1:
                 rd = 1
         if (string.find(data, "f") != -1):
             # engage flipper
-            pwm.setPWM(chanFlipper, 0, servoMax)
-            time.sleep(2)
-            pwm.setPWM(chanFlipper, 0, servoMin)
+            pwm.setPWM(chanLeftFlipper, 0, servoMax)
+	    pwm.setPWM(chanRightFlipper, 0, servoMin)
+            time.sleep(1)
+            pwm.setPWM(chanLeftFlipper, 0, servoMin)
+	    pwm.setPWM(chanRightFlipper, 0, servoMax)
+        if (string.find(data, "m") != -1):
+            pwm.setPWM(chanLeftFlipper, 0, (servoMin + servoMax)/2)
+	    pwm.setPWM(chanRightFlipper, 0, (servoMin + servoMax)/2)
+	if (string.find(data, "q") != -1):
+	    for x in range(5):
+	        pwm.setPWM(chanLeftFlipper, 0, servoMax)
+	        pwm.setPWM(chanRightFlipper, 0, servoMax)
+	        time.sleep(1)
+	        pwm.setPWM(chanLeftFlipper, 0, servoMin)
+	        pwm.setPWM(chanRightFlipper, 0, servoMin)
+	        time.sleep(1)
         if (string.find(data, "k") != -1):
             break
         print "received data:", data
@@ -217,10 +232,11 @@ while 1:
         break
 
 #  STOP all motors/servos
-pwm.setPWM(chanleftDoor, 0, 0)
+pwm.setPWM(chanLeftDoor, 0, 0)
 pwm.setPWM(chanRightDoor, 0, 0)
 pwm.setPWM(chanLeftMotor, 0, 0)
 pwm.setPWM(chanRightMotor, 0, 0)
-pwm.setPWM(chanFlipper, 0, 0)
+pwm.setPWM(chanLeftFlipper, 0, 0)
+pwm.setPWM(chanRightFlipper, 0, 0)
         
 print "kill command received. Goodbye."

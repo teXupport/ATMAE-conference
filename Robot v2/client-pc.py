@@ -1,4 +1,4 @@
-import pygame, sys, math, random, time, socket, serial
+import pygame, sys, math, random, time, socket
 from pygame.locals import *
 from operator import attrgetter
 import platform
@@ -128,18 +128,19 @@ max_fps = 60
 
 TCP_IP = '192.168.1.127'
 ##TCP_IP = '127.0.0.1'
-TCP_PORT = 5025
+TCP_PORT = 5026
 BUFFER_SIZE = 32
 MESSAGE = "w"
+auto = False
 driveL = ""
 driveR = ""
 data = ""
-motorMin = 145
+motorMin = 150
 motorMax = 650
 motorRes = motorMax - motorMin
 motorMid = int(round(((motorMax + motorMin) / 2), 0))
-speed = 0.4
-reverseSpeed = 0.4
+speed = 0.25
+reverseSpeed = 0.25
 inverted = False
 
 s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -152,6 +153,9 @@ while 1:
         joystick.dispatch_events()
 
     MESSAGE = "w"
+    if (auto):
+        s.send(MESSAGE.encode())
+        
     if (inverted): # inverted controls
         for e in pygame.event.get():
             #print('event: {}'.format(pygame.event.event_name(e.type)))
@@ -227,7 +231,7 @@ while 1:
                     MESSAGE = "D"
                     s.send(MESSAGE.encode())
                 elif(e.button == 3):  # Y button
-                    MESSAGE = "w"  # wait
+                    MESSAGE = "m"  # flag middle
                     s.send(MESSAGE.encode())
                 elif(e.button == 6):  # BACK button
                     MESSAGE = "w"  # wait
@@ -236,12 +240,17 @@ while 1:
                     s.send(MESSAGE.encode())
                 elif(e.button == 7):  # START button
                     MESSAGE = "t"
+                    if (auto):
+                        auto = False
+                    else:
+                        auto = True
+                    
                     s.send(MESSAGE.encode())
                 elif(e.button == 8):  # LS click
-                    MESSAGE = "w"  # wait
+                    MESSAGE = "c"  # calibrate line sensors
                     s.send(MESSAGE.encode())
                 elif(e.button == 9):  # RS click
-                    MESSAGE = "w"  # wait
+                    MESSAGE = "q"  # wait
                     s.send(MESSAGE.encode())
             elif e.type == JOYHATMOTION:
                 # pygame sends this; xinput sends a button instead--the handler converts the button to a hat event
@@ -251,19 +260,19 @@ while 1:
                 if e.value != (0, 0):
                     which_hat = e.value
                     if(which_hat == (0, 1)):
-                        if(speed < 1):
+                        if(speed < 0.8):
                             speed = speed + 0.05
                         print "Speed: %s" % (100 * speed)
                     elif(which_hat == (0, -1)):
-                        if(speed > 0):
+                        if(speed > 0.05):
                             speed = speed - 0.05
                         print "Speed: %s" % (100 * speed)
                     elif(which_hat == (1, 0)):
-                        if(reverseSpeed < 1):
+                        if(reverseSpeed < 0.8):
                             reverseSpeed = reverseSpeed + 0.05
                         print "Reverse speed: %s" % (100 * reverseSpeed)
                     elif(which_hat == (-1, 0)):
-                        if(reverseSpeed > 0):
+                        if(reverseSpeed > 0.05):
                             reverseSpeed = reverseSpeed - 0.05
                         print "Reverse speed: %s" % (100 * reverseSpeed)
                     hats[which_hat].value = 1
@@ -315,22 +324,22 @@ while 1:
                 buttons[e.button].value = 1
                 if(e.button == 4 and driveL == ""):  # LB
                     driveL = "B"
-                    MESSAGE = "l"
+                    MESSAGE = "L" + str(int(motorMid - reverseSpeed * (motorRes / 2)))
                     s.send(MESSAGE.encode())
                 elif(e.button == 5 and driveR == ""):  # RB
                     driveR = "B"
-                    MESSAGE = "r"
+                    MESSAGE = "R" + str(int(motorMid - reverseSpeed * (motorRes / 2)))
                     s.send(MESSAGE.encode())
             elif e.type == JOYBUTTONUP:
                 #print('JOYBUTTONUP: button {}'.format(e.button))
                 buttons[e.button].value = 0
                 if(e.button == 4 and driveL == "B"):  # LB
                     driveL = ""
-                    MESSAGE = "l"
+                    MESSAGE = "L0"
                     s.send(MESSAGE.encode())
                 elif(e.button == 5 and driveR == "B"):  # RB
                     driveR = ""
-                    MESSAGE = "r"
+                    MESSAGE = "R0"
                     s.send(MESSAGE.encode())
                 elif(e.button == 0):  # A button
                     MESSAGE = "f"
@@ -342,7 +351,7 @@ while 1:
                     MESSAGE = "D"
                     s.send(MESSAGE.encode())
                 elif(e.button == 3):  # Y button
-                    MESSAGE = "w"  # wait
+                    MESSAGE = "m"  # wait
                     s.send(MESSAGE.encode())
                 elif(e.button == 6):  # BACK button
                     MESSAGE = "w"  # wait
@@ -351,12 +360,17 @@ while 1:
                     s.send(MESSAGE.encode())
                 elif(e.button == 7):  # START button
                     MESSAGE = "t"
+                    if (auto):
+                        auto = False
+                    else:
+                        auto = True
+                    
                     s.send(MESSAGE.encode())
                 elif(e.button == 8):  # LS click
-                    MESSAGE = "w"  # wait
+                    MESSAGE = "c"  # calibrate line sensors
                     s.send(MESSAGE.encode())
                 elif(e.button == 9):  # RS click
-                    MESSAGE = "w"  # wait
+                    MESSAGE = "q"  # wait
                     s.send(MESSAGE.encode())
             elif e.type == JOYHATMOTION:
                 # pygame sends this; xinput sends a button instead--the handler converts the button to a hat event
@@ -373,6 +387,14 @@ while 1:
                         if(speed > 0):
                             speed = speed - 0.05
                         print "Speed: %s" % (100 * speed)
+                    elif(which_hat == (1, 0)):
+                        if(reverseSpeed < 1):
+                            reverseSpeed = reverseSpeed + 0.05
+                        print "Reverse speed: %s" % (100 * reverseSpeed)
+                    elif(which_hat == (-1, 0)):
+                        if(reverseSpeed > 0):
+                            reverseSpeed = reverseSpeed - 0.05
+                        print "Reverse speed: %s" % (100 * reverseSpeed)
                     hats[which_hat].value = 1
             elif e.type == pygame.QUIT:
                 MESSAGE = "k"
